@@ -22,6 +22,22 @@ MAKEFUN_OUTPUT_DIR=out node main.ts --input /path/to/snapshot.json
 
 The board covers all 40 watchlist protocols plus every rankable pre-token protocol below the $50M floor (186 early rows). Live-token protocols are set aside with their market caps shown, never mixed into the ranking. No protocol name is special-cased.
 
+### Launch readiness
+
+Each row also carries a launch readiness score, 0 to 100: the same four multipliers, each rescaled to 0..1 and averaged. A protocol scores high only when it is large, growing, mature and multi-chain at once. The dashboard's detail view shows the score with a plain-language label, and the board can be sorted by it.
+
+### Top movers
+
+The dashboard's Top movers strip shows the five fastest-growing pre-token protocols by seven-day growth, each opening its detail view. The strip is computed from the board, never hand-picked.
+
+### Farm plans
+
+Every row carries an eight-step farm plan derived from the protocol's own record: a fresh wallet, a first position sized to the TVL, a weekly action and a second position specific to its category, a points-page check, and a farm log. Steps name the cost and the time they take.
+
+## Dashboard
+
+A static page, no framework and no network: search, category and chain filters, sort by implied value, seven-day growth or launch readiness, a pre-token / live-token toggle, a per-protocol detail view with the model equation and a farm plan, and a model panel that states the formula. The page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.
+
 ## Verified locally
 
 The entry's own run on the sealed snapshot writes 226 rows, and a local replica of the sealed seven-row gate (dashboard files, board, sorted order, watchlist coverage, farm steps, screenshots, dossier) passes 7/7. The dashboard's source is 35 KB (cap 64 KB) and the dossier text is 35,419 bytes; the three screenshots are 1440x900 PNGs under 512 KB each. The dashboard page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.

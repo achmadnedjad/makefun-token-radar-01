@@ -127,6 +127,7 @@ tbody tr[data-selected="true"] { background: color-mix(in srgb, var(--gold) 12%,
 .model { margin-top: var(--step-4); padding: var(--step-5); display: grid; gap: var(--step-3); }
 .formula { font-family: var(--font-num); font-size: 13px; line-height: 1.7; color: var(--muted); overflow-wrap: anywhere; }
 .empty { padding: var(--step-7) var(--step-5); text-align: center; display: grid; gap: var(--step-3); justify-items: center; }
+.loading { color: var(--muted); padding: var(--step-7) var(--step-5); text-align: center; }
 .empty p { color: var(--muted); }
 .button { min-height: 36px; padding: 0 var(--step-4); border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface); color: var(--ink); }
 .button.primary { background: var(--gold); border-color: var(--gold); color: var(--canvas); font-weight: 600; }

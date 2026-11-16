@@ -483,6 +483,23 @@ export function liveRows(snapshot: Snapshot): LiveRow[] {
     }));
 }
 
+/**
+ * The model as plain text, for the dashboard's model panel and the dossier: the formula, the
+ * constants and what each multiplier means, in the order the model applies them.
+ */
+export function describeModel(model: ModelConstants): string[] {
+  return [
+    `implied = round(TVL x ${model.base_multiple} x growthMult x maturityMult x chainMult)`,
+    `growthMult = 1 + clamp(change_7d, ${model.growth_floor}, ${model.growth_cap}) / 100 x ${model.growth_weight}`,
+    `maturityMult = ${model.maturity_floor} + min(age_days, ${model.maturity_days}) / ${model.maturity_days} x ${model.maturity_range}`,
+    `chainMult = 1 + min(chains - 1, ${model.chain_cap}) x ${model.chain_weight}`,
+    `growth: a protocol that grew 100% in a week scores a growth multiplier of ${1 + model.growth_weight}; one that fell 60% scores ${1 - model.growth_weight * 0.6}.`,
+    `maturity: a protocol listed ${model.maturity_days} days ago scores a maturity multiplier of ${model.maturity_floor + model.maturity_range}; a brand-new one scores ${model.maturity_floor}.`,
+    `chains: a protocol on ${model.chain_cap + 1} or more chains scores a chain multiplier of ${1 + model.chain_cap * model.chain_weight}; a single-chain protocol scores 1.`,
+    `readiness: the same four multipliers, each rescaled to 0..1 and averaged, times 100.`,
+  ];
+}
+
 /** The fastest-growing pre-token protocols on the board, for the dashboard's Top movers strip. */
 export function topMovers(board: BoardRow[], count = 5): BoardRow[] {
   return board

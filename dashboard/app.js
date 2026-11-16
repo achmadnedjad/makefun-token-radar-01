@@ -7,7 +7,7 @@
   var DATA = window.RADAR;
   if (!DATA) return;
   var app = document.getElementById('board');
-  var state = { q: '', category: 'all', tab: 'pre-token', sort: 'implied', dir: -1, selected: null };
+  var state = { q: '', category: 'all', chain: 'all', tab: 'pre-token', sort: 'implied', dir: -1, selected: null };
 
   var usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   function fmtUsd(n) {
@@ -174,6 +174,16 @@
     return 'A pre-token protocol: users interact with its app, and a token, if one comes, usually rewards its early users.';
   }
 
+  // Sort the board by implied value (the gate's order), by seven-day growth, or by launch
+  // readiness. The rank column always shows the gate's rank, so a re-sort never renumbers a row.
+  function sortRows(rows, key) {
+    var list = rows.slice();
+    if (key === 'growth') list.sort(function (a, b) { return (b.change_7d === null ? -Infinity : b.change_7d) - (a.change_7d === null ? -Infinity : a.change_7d); });
+    else if (key === 'readiness') list.sort(function (a, b) { return readinessOf(b, DATA.model) - readinessOf(a, DATA.model); });
+    else list.sort(function (a, b) { return a.rank - b.rank; });
+    return list;
+  }
+
   function readHash() {
     var hash = window.location.hash.replace(/^#/, '');
     if (!hash) return;
@@ -194,12 +204,16 @@
 
   function rows() {
     var q = state.q.trim().toLowerCase();
-    return DATA.rows.filter(function (r) {
+    var list = DATA.rows.filter(function (r) {
       if (state.category !== 'all' && r.category !== state.category) return false;
+      if (state.chain !== 'all' && (r.chains || []).indexOf(state.chain) < 0) return false;
       if (!q) return true;
       var hay = [r.name, r.slug, r.category, (r.chains || []).join(' ')].join(' ').toLowerCase();
       return hay.indexOf(q) >= 0;
     });
+    if (state.sort === 'growth') list = sortRows(list, 'growth');
+    else if (state.sort === 'readiness') list = sortRows(list, 'readiness');
+    return list;
   }
   function sortedRows(list) {
     var key = state.sort;
@@ -244,6 +258,7 @@
 
   function controls() {
     var categories = Array.from(new Set(DATA.rows.map(function (r) { return r.category || 'Other'; }))).sort();
+    var chains = Array.from(new Set(DATA.rows.reduce(function (acc, r) { return acc.concat(r.chains || []); }, []))).sort();
     var search = el('input', { type: 'search', id: 'q', placeholder: 'Search name, category or chain', value: state.q, 'aria-label': 'Search the board' });
     search.addEventListener('input', function () { state.q = search.value; writeHash(); render(); });
     var select = el('select', { id: 'category', 'aria-label': 'Filter by category' },
@@ -251,11 +266,25 @@
       categories.map(function (c) { return el('option', { value: c, text: c, selected: c === state.category ? 'selected' : null }); })
     );
     select.addEventListener('change', function () { state.category = select.value; writeHash(); render(); });
+    var chain = el('select', { id: 'chain', 'aria-label': 'Filter by chain' },
+      el('option', { value: 'all', text: 'All chains' }),
+      chains.map(function (c) { return el('option', { value: c, text: c, selected: c === state.chain ? 'selected' : null }); })
+    );
+    chain.addEventListener('change', function () { state.chain = chain.value; writeHash(); render(); });
+    var sort = el('select', { id: 'sort', 'aria-label': 'Sort the board' },
+      el('option', { value: 'implied', text: 'Implied value' }),
+      el('option', { value: 'growth', text: 'Seven-day growth' }),
+      el('option', { value: 'readiness', text: 'Launch readiness' })
+    );
+    sort.value = state.sort;
+    sort.addEventListener('change', function () { state.sort = sort.value; render(); });
     var pre = el('button', { type: 'button', 'aria-pressed': state.tab === 'pre-token' ? 'true' : 'false', text: 'Pre-token', onclick: function () { state.tab = 'pre-token'; render(); } });
     var live = el('button', { type: 'button', 'aria-pressed': state.tab === 'live' ? 'true' : 'false', text: 'Live token', onclick: function () { state.tab = 'live'; render(); } });
     return el('div', { class: 'controls' },
       el('div', { class: 'field' }, el('label', { for: 'q', text: 'Search' }), search),
       el('div', { class: 'field' }, el('label', { for: 'category', text: 'Category' }), select),
+      el('div', { class: 'field' }, el('label', { for: 'chain', text: 'Chain' }), chain),
+      el('div', { class: 'field' }, el('label', { for: 'sort', text: 'Sort by' }), sort),
       el('div', { class: 'field' }, el('span', { class: 'sub', text: 'Token status' }), el('div', { class: 'tabs' }, pre, live)),
       el('span', { class: 'count', text: state.tab === 'pre-token' ? rows().length + ' rows shown' : DATA.live.length + ' live-token protocols' })
     );
