@@ -1,6 +1,7 @@
 /* Token Radar's night theme. The palette is a dark ink-green canvas, a warm gold for the
    ranking and an emerald for growth; the two radii and two families are the whole style, and
-   everything else is spacing, a hairline and a type step. */
+   everything else is spacing, a hairline and a type step. Red is reserved for falls and for
+   the live-token tab, so a red number always means a loss or a token that already exists. */
 :root {
   --canvas: #0d1210;
   --surface: #151d19;

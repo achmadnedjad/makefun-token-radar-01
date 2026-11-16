@@ -76,6 +76,8 @@ python3 ../gate_check.py out /path/to/snapshot.json
 
 The gate replica checks the seven sealed rows: dashboard files, board file, sorted by value, watchlist coverage, farm steps, screenshots and the dossier byte-for-byte. The real gate runs server-side after submission; this replica is the same seven rows, re-implemented locally.
 
+The snapshot is the one the kit ships (as of 14 November 2026). A newer snapshot re-ranks the board, so the numbers in this README are for that snapshot only.
+
 ## Changelog
 
 - **radar-2** — the model adds a chain multiplier (up to 1.20) and scores all 186 rankable below-floor protocols, not just the first 160. The board grows from 200 to 226 rows.
