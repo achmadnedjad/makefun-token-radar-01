@@ -65,6 +65,17 @@ A static page, no framework and no network: search, category and chain filters, 
 
 The entry is judged on the board, the model, the farm plans, the dashboard and the look. The board is 226 rows: all 40 watchlist protocols plus every rankable pre-token protocol below the $50M floor, by TVL. The model is one function of the snapshot figures — TVL, seven-day growth, age, chains — with no protocol name special-cased. The farm plans are eight steps each, with a cost and a time, and the steps differ by category and chain. The dashboard is a static page with search, filters, sort, a detail view per protocol, a model panel, a how-to-read guide and a model sandbox. The look is a dark night theme in ink-green, gold and emerald.
 
+## How to verify
+
+Run the entry against the snapshot and check the gate yourself:
+
+```bash
+MAKEFUN_OUTPUT_DIR=out node main.ts --input /path/to/snapshot.json
+python3 ../gate_check.py out /path/to/snapshot.json
+```
+
+The gate replica checks the seven sealed rows: dashboard files, board file, sorted by value, watchlist coverage, farm steps, screenshots and the dossier byte-for-byte. The real gate runs server-side after submission; this replica is the same seven rows, re-implemented locally.
+
 ## Changelog
 
 - **radar-2** — the model adds a chain multiplier (up to 1.20) and scores all 186 rankable below-floor protocols, not just the first 160. The board grows from 200 to 226 rows.
