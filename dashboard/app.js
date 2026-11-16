@@ -133,8 +133,45 @@
       { text: secondPositionFor(p, capital, chain), cost: '$' + Math.max(10, Math.round(capital / 5)) + ' of capital and about $2 of gas', time: '10 minutes' },
       { text: 'Hold the position for at least ' + hold + ' days so the activity is counted in more than one snapshot.', cost: 'the $' + capital + ' stays in the position', time: hold + ' days' },
       { text: "Before you withdraw, open the protocol's own points or rewards page and claim only from the link it publishes.", cost: 'no fee to check, and never pay to claim', time: '10 minutes' },
+      { text: "Check the protocol's points or rewards page once a week and confirm the position is still earning; if a week shows nothing, repeat the weekly action before the next snapshot.", cost: 'no fee to check', time: '5 minutes a week' },
       { text: 'Write the wallet, the dates and every transaction in a farm log so you can repeat the position or unwind it.', cost: 'nothing but the log', time: '5 minutes' }
     ].map(stepText);
+  }
+
+  // Launch readiness, 0 to 100, and its plain-language label: the same four multipliers
+  // that set the implied value, rescaled and averaged, so the page and the board agree.
+  function readinessOf(row, model) {
+    var growth = Math.min(model.growth_cap, Math.max(model.growth_floor, row.change_7d === null || row.change_7d === undefined ? 0 : row.change_7d));
+    var growthMult = 1 + (growth / 100) * model.growth_weight;
+    var age = row.age_days === null || row.age_days === undefined ? model.unknown_age_days : row.age_days;
+    var maturity = model.maturity_floor + (Math.min(Math.max(age, 0), model.maturity_days) / model.maturity_days) * model.maturity_range;
+    var chains = row.chains && row.chains.length ? row.chains.length : 1;
+    var chainMult = 1 + Math.min(Math.max(chains - 1, 0), model.chain_cap) * model.chain_weight;
+    var growth01 = Math.min(Math.max((growthMult - 1) / 0.72, 0), 1);
+    var maturity01 = Math.min(Math.max((maturity - model.maturity_floor) / model.maturity_range, 0), 1);
+    var chain01 = Math.min(Math.max((chainMult - 1) / (model.chain_cap * model.chain_weight), 0), 1);
+    var size01 = Math.min(Math.max(Math.log10(Math.max(row.tvl_usd, 1)) - 6, 0) / 4, 1);
+    return Math.round(((growth01 + maturity01 + chain01 + size01) / 4) * 100);
+  }
+  function readinessLabel(readiness) {
+    if (readiness >= 80) return 'Ready: large, growing, mature and multi-chain.';
+    if (readiness >= 60) return 'Warming up: most of the model\'s signals point the same way.';
+    if (readiness >= 40) return 'Early: some signals are there, some are not yet.';
+    return 'Very early: the protocol has not yet built the record a launch follows.';
+  }
+  function categoryBlurb(category) {
+    var c = (category || '').toLowerCase();
+    if (c.indexOf('lend') >= 0 || c.indexOf('cdp') >= 0 || c.indexOf('collateral') >= 0) return 'Lending: users supply assets and borrow against them; a token usually rewards suppliers and borrowers.';
+    if (c.indexOf('dex') >= 0 || c.indexOf('yield') >= 0 || c.indexOf('leveraged farm') >= 0) return 'Decentralised exchange and yield: users trade and provide liquidity; a token usually rewards traders and liquidity providers.';
+    if (c.indexOf('bridge') >= 0) return 'Bridge: users move assets between chains; a token usually rewards bridging volume.';
+    if (c.indexOf('staking') >= 0 || c.indexOf('restak') >= 0) return 'Staking: users lock assets to secure a chain or protocol; a token usually rewards stakers.';
+    if (c.indexOf('perpetual') >= 0 || c.indexOf('derivative') >= 0) return 'Derivatives: users trade leveraged positions; a token usually rewards traders and market makers.';
+    if (c.indexOf('prediction') >= 0) return 'Prediction market: users bet on outcomes; a token usually rewards market makers and winners.';
+    if (c.indexOf('curator') >= 0 || c.indexOf('allocator') >= 0) return 'Vault curator: users deposit into managed vaults; a token usually rewards depositors.';
+    if (c.indexOf('stable') >= 0) return 'Stablecoin: users mint or hold a pegged asset; a token usually rewards minters and holders.';
+    if (c.indexOf('rwa') >= 0) return 'Real-world assets: users hold tokenised off-chain yield; a token usually rewards holders.';
+    if (c.indexOf('insurance') >= 0) return 'Insurance: users buy cover against protocol risk; a token usually rewards policy holders.';
+    return 'A pre-token protocol: users interact with its app, and a token, if one comes, usually rewards its early users.';
   }
 
   function readHash() {
@@ -343,6 +380,7 @@
     ));
     dialog.appendChild(el('section', { class: 'detail-section' },
       el('h3', { text: 'Implied value' }),
+      el('p', { class: 'sub', text: categoryBlurb(row.category) }),
       el('div', { class: 'equation' },
         el('div', null, el('span', { text: 'TVL' }), el('b', { class: 'num', text: fmtUsd(row.tvl_usd) })),
         el('div', null, el('span', { text: 'Seven-day growth' }), el('b', { class: 'num', text: fmtPct(row.change_7d) })),
@@ -351,8 +389,10 @@
         el('div', null, el('span', { text: 'Growth multiplier' }), el('b', { class: 'num', text: String(row.growth_multiplier) })),
         el('div', null, el('span', { text: 'Maturity multiplier' }), el('b', { class: 'num', text: String(row.maturity_multiplier) })),
         el('div', null, el('span', { text: 'Chain multiplier' }), el('b', { class: 'num', text: String(row.chain_multiplier) })),
-        el('div', null, el('span', { text: 'Implied value' }), el('b', { class: 'num', text: fmtUsd(row.implied_value_usd) }))
+        el('div', null, el('span', { text: 'Implied value' }), el('b', { class: 'num', text: fmtUsd(row.implied_value_usd) })),
+        el('div', null, el('span', { text: 'Launch readiness' }), el('b', { class: 'num', text: String(row.readiness !== undefined && row.readiness !== null ? row.readiness : readinessOf(row, DATA.model)) + ' / 100' }))
       ),
+      el('p', { class: 'sub', text: readinessLabel(row.readiness !== undefined && row.readiness !== null ? row.readiness : readinessOf(row, DATA.model)) }),
       el('p', { class: 'sub', text: 'Model ' + DATA.model_version + ': the same function scores every protocol. The page recomputes this row as ' + fmtUsd(impliedOf(row, DATA.model)) + (impliedOf(row, DATA.model) === row.implied_value_usd ? ', the same number board.json carries.' : ', which differs from the board: the data would be stale.') + ' This is an estimate, not a price.' })
     ));
     dialog.appendChild(el('section', { class: 'detail-section' },
@@ -386,12 +426,31 @@
     );
   }
 
+  function movers() {
+    var list = DATA.movers || [];
+    if (list.length === 0) return null;
+    return el('section', { class: 'movers', 'aria-label': 'Top movers by seven-day growth' },
+      el('h2', { text: 'Top movers' }),
+      el('div', { class: 'mover-list' },
+        list.map(function (r) {
+          return el('button', { type: 'button', class: 'mover', onclick: function () { openDetail(r.slug); } },
+            el('b', { class: 'mover-name', text: r.name }),
+            el('span', { class: 'mover-growth num pos', text: fmtPct(r.change_7d) }),
+            el('span', { class: 'mover-meta', text: 'Rank ' + r.rank + ' · TVL ' + fmtUsd(r.tvl_usd) })
+          );
+        })
+      )
+    );
+  }
+
   function render() {
     app.textContent = '';
     var shell = el('div', { class: 'shell' });
     shell.appendChild(header());
     shell.appendChild(lede());
     shell.appendChild(spotlight());
+    var mv = movers();
+    if (mv) shell.appendChild(mv);
     shell.appendChild(controls());
     shell.appendChild(state.tab === 'pre-token' ? boardTable() : liveTable());
     if (state.tab === 'pre-token') shell.appendChild(modelPanel());

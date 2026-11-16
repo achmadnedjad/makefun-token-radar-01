@@ -100,6 +100,13 @@ export interface BoardRow {
   token_status: 'pre-token';
   age_days: number | null;
   implied_value_usd: number;
+  /**
+   * Launch readiness, 0 to 100: how close this protocol is to a launch, from the same four
+   * multipliers that set its implied value. A high TVL that has run a long time with no token,
+   * is still growing and covers many chains scores near 100; a young, flat, single-chain
+   * protocol scores low. It is a second view of the same model, not a second model.
+   */
+  readiness: number;
   model: {
     base_multiple: number;
     growth_pct: number;
@@ -127,6 +134,8 @@ export interface RadarRow {
   growth_multiplier: number;
   maturity_multiplier: number;
   chain_multiplier: number;
+  /** Launch readiness, 0 to 100, the same model's second view of the row. */
+  readiness: number;
 }
 
 /** A live-token protocol: it already trades, so the board shows the market's own value, not a model's. */
@@ -153,6 +162,8 @@ export interface RadarData {
   live_size: number;
   rows: RadarRow[];
   live: LiveRow[];
+  /** The fastest-growing pre-token protocols, as compact rows for the Top movers strip. */
+  movers: RadarRow[];
 }
 
 /** Why the snapshot is not one this model can score. */
@@ -192,6 +203,49 @@ export function impliedValue(protocol: SnapshotProtocol, asOf: string, model: Mo
   const base = protocol.tvl_usd * model.base_multiple;
   const implied = Math.max(1, Math.round(base * growthMult * maturityMult * chainMult));
   return { implied, growthPct, growthMult, maturityMult, chainMult, age };
+}
+
+/**
+ * Launch readiness, 0 to 100, from the same four multipliers that set the implied value.
+ * Each multiplier is rescaled to its own 0..1 range and the four are averaged, so a protocol
+ * scores high only when it is large, growing, mature and multi-chain at once. The score is a
+ * second view of the model, never a second model: it reuses growthMult, maturityMult and
+ * chainMult, and adds a size term from the TVL's own scale.
+ */
+export function launchReadiness(protocol: SnapshotProtocol, asOf: string, model: ModelConstants): number {
+  const { growthMult, maturityMult, chainMult } = impliedValue(protocol, asOf, model);
+  const growth01 = Math.min(Math.max((growthMult - 1) / 0.72, 0), 1);
+  const maturity01 = Math.min(Math.max((maturityMult - model.maturity_floor) / model.maturity_range, 0), 1);
+  const chain01 = Math.min(Math.max((chainMult - 1) / (model.chain_cap * model.chain_weight), 0), 1);
+  const size01 = Math.min(Math.max(Math.log10(Math.max(protocol.tvl_usd, 1)) - 6, 0) / 4, 1);
+  return Math.round(((growth01 + maturity01 + chain01 + size01) / 4) * 100);
+}
+
+/** A readiness score's plain-language label, for the dashboard's detail view. */
+export function readinessLabel(readiness: number): string {
+  if (readiness >= 80) return 'Ready: large, growing, mature and multi-chain.';
+  if (readiness >= 60) return "Warming up: most of the model's signals point the same way.";
+  if (readiness >= 40) return 'Early: some signals are there, some are not yet.';
+  return 'Very early: the protocol has not yet built the record a launch follows.';
+}
+
+/**
+ * One line on what a category does, for the dashboard's detail view. The line is generic to
+ * the category, never to a name, so it reads the same for every protocol of that kind.
+ */
+export function categoryBlurb(category: string | null): string {
+  const c = (category ?? '').toLowerCase();
+  if (c.includes('lend') || c.includes('cdp') || c.includes('collateral')) return 'Lending: users supply assets and borrow against them; a token usually rewards suppliers and borrowers.';
+  if (c.includes('dex') || c.includes('yield') || c.includes('leveraged farm')) return 'Decentralised exchange and yield: users trade and provide liquidity; a token usually rewards traders and liquidity providers.';
+  if (c.includes('bridge')) return 'Bridge: users move assets between chains; a token usually rewards bridging volume.';
+  if (c.includes('staking') || c.includes('restak')) return 'Staking: users lock assets to secure a chain or protocol; a token usually rewards stakers.';
+  if (c.includes('perpetual') || c.includes('derivative')) return 'Derivatives: users trade leveraged positions; a token usually rewards traders and market makers.';
+  if (c.includes('prediction')) return 'Prediction market: users bet on outcomes; a token usually rewards market makers and winners.';
+  if (c.includes('curator') || c.includes('allocator')) return 'Vault curator: users deposit into managed vaults; a token usually rewards depositors.';
+  if (c.includes('stable')) return 'Stablecoin: users mint or hold a pegged asset; a token usually rewards minters and holders.';
+  if (c.includes('rwa')) return 'Real-world assets: users hold tokenised off-chain yield; a token usually rewards holders.';
+  if (c.includes('insurance')) return 'Insurance: users buy cover against protocol risk; a token usually rewards policy holders.';
+  return 'A pre-token protocol: users interact with its app, and a token, if one comes, usually rewards its early users.';
 }
 
 /** DefiLlama's version-marker rule: a name ending in a release is a pool of another protocol. */
@@ -241,7 +295,8 @@ export function buildBoard(snapshot: Snapshot, model: ModelConstants = MODEL): B
 
   const scored = [...chosen.values()].map((p) => {
     const { implied, growthPct, growthMult, maturityMult, chainMult, age } = impliedValue(p, snapshot.as_of, model);
-    return { p, implied, growthPct, growthMult, maturityMult, chainMult, age };
+    const readiness = launchReadiness(p, snapshot.as_of, model);
+    return { p, implied, growthPct, growthMult, maturityMult, chainMult, age, readiness };
   });
   scored.sort((a, b) => b.implied - a.implied || (a.p.slug < b.p.slug ? -1 : a.p.slug > b.p.slug ? 1 : 0));
   return scored.map((s, i) => ({
@@ -259,6 +314,7 @@ export function buildBoard(snapshot: Snapshot, model: ModelConstants = MODEL): B
     token_status: 'pre-token',
     age_days: s.age,
     implied_value_usd: s.implied,
+    readiness: s.readiness,
     model: {
       base_multiple: model.base_multiple,
       growth_pct: s.growthPct,
@@ -356,7 +412,7 @@ function secondPositionFor(p: SnapshotProtocol, capital: number, chain: string):
 }
 
 /**
- * A protocol's farm plan: seven steps, each an action with a cost and a time. The plan is derived from
+ * A protocol's farm plan: eight steps, each an action with a cost and a time. The plan is derived from
  * the protocol's own record (category, chains, TVL, age), never from a hand-written list of names.
  */
 export function farmSteps(p: SnapshotProtocol, age: number | null): FarmStep[] {
@@ -398,6 +454,11 @@ export function farmSteps(p: SnapshotProtocol, age: number | null): FarmStep[] {
       time: '10 minutes',
     },
     {
+      text: `Check the protocol's points or rewards page once a week and confirm the position is still earning; if a week shows nothing, repeat the weekly action before the next snapshot.`,
+      cost: 'no fee to check',
+      time: '5 minutes a week',
+    },
+    {
       text: `Write the wallet, the dates and every transaction in a farm log so you can repeat the position or unwind it.`,
       cost: 'nothing but the log',
       time: '5 minutes',
@@ -422,6 +483,14 @@ export function liveRows(snapshot: Snapshot): LiveRow[] {
     }));
 }
 
+/** The fastest-growing pre-token protocols on the board, for the dashboard's Top movers strip. */
+export function topMovers(board: BoardRow[], count = 5): BoardRow[] {
+  return board
+    .filter((r) => r.change_7d !== null)
+    .sort((a, b) => (b.change_7d ?? 0) - (a.change_7d ?? 0) || b.implied_value_usd - a.implied_value_usd)
+    .slice(0, count);
+}
+
 /** A board row's compact form for data.js, with the farm plan generated in the page. */
 export function radarRow(row: BoardRow): RadarRow {
   return {
@@ -439,6 +508,7 @@ export function radarRow(row: BoardRow): RadarRow {
     growth_multiplier: row.model.growth_multiplier,
     maturity_multiplier: row.model.maturity_multiplier,
     chain_multiplier: row.model.chain_multiplier,
+    readiness: row.readiness,
   };
 }
 
@@ -459,6 +529,7 @@ export function buildRadar(snapshot: Snapshot, model: ModelConstants = MODEL): {
     live_size: live.length,
     rows: board.map(radarRow),
     live,
+    movers: topMovers(board).map(radarRow),
   };
   return { board, radar };
 }
