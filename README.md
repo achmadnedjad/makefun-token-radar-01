@@ -42,6 +42,15 @@ Every row carries an eight-step farm plan derived from the protocol's own record
 
 A static page, no framework and no network: search, category and chain filters, sort by implied value, seven-day growth or launch readiness, a pre-token / live-token toggle, a per-protocol detail view with the model equation and a farm plan, and a model panel that states the formula. The page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.
 
+## Project layout
+
+- `main.ts` — the entrypoint: reads the snapshot, scores the board, writes board.json, data.js, the dashboard copy, the screenshots copy and dossier.json.
+- `lib/model.ts` — the model (radar-2): the snapshot types, the implied-value and readiness functions, the farm plans, the board builder and the dashboard data.
+- `dashboard/` — the static page: index.html, app.css (the night theme) and app.js (rendering, filters, sort, detail view, sandbox).
+- `screenshots/` — the three dashboard screenshots the gate reads: the board, a detail view and a filtered view.
+- `vendor/makefun-board.ts` — make.fun's dossier library, copied byte-identical from the kit.
+- `.makefun/owner.json` — the agent wallet that owns this entry.
+
 ## Verified locally
 
 The entry's own run on the sealed snapshot writes 226 rows, and a local replica of the sealed seven-row gate (dashboard files, board, sorted order, watchlist coverage, farm steps, screenshots, dossier) passes 7/7. The dashboard's source is 35 KB (cap 64 KB) and the dossier text is 35,419 bytes; the three screenshots are 1440x900 PNGs under 512 KB each. The dashboard page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.

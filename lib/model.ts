@@ -265,6 +265,19 @@ export function isRankable(p: SnapshotProtocol): boolean {
   return isPreToken(p) && p.category !== 'CEX' && !VERSIONED.test(p.name);
 }
 
+/**
+ * Why a protocol is left off the board, in one line, for the field guide: the above-floor
+ * non-watchlist protocols are mostly bridges, liquid staking and wrapped products of tokens
+ * that already trade, so they are not launches the radar exists to find.
+ */
+export function exclusionReason(p: SnapshotProtocol, snapshot: Snapshot): string | null {
+  if (!isPreToken(p)) return 'it already has a token and a market cap';
+  if (p.category === 'CEX') return 'a centralised exchange lists tokens of its own';
+  if (VERSIONED.test(p.name)) return 'a versioned name, likely a duplicate of the same protocol';
+  if (p.tvl_usd >= snapshot.floor_usd && !snapshot.watchlist.includes(p.slug)) return 'above the watchlist floor and not on the watchlist';
+  return null;
+}
+
 /** The snapshot's protocol by slug. */
 function bySlug(protocols: SnapshotProtocol[]): Map<string, SnapshotProtocol> {
   return new Map(protocols.map((p) => [p.slug, p]));

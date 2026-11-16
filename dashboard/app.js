@@ -381,6 +381,18 @@
     );
   }
 
+  // The model as plain text, for the model panel: the formula, then one line per multiplier
+  // saying what it rewards, so a reader can see why a row ranks where it does.
+  function describeModel(model) {
+    return [
+      'implied = round(TVL x ' + model.base_multiple + ' x growthMult x maturityMult x chainMult)',
+      'growthMult = 1 + clamp(change_7d, ' + model.growth_floor + ', ' + model.growth_cap + ') / 100 x ' + model.growth_weight + ' — a protocol that grew 100% in a week scores a growth multiplier of ' + (1 + model.growth_weight) + '; one that fell 60% scores ' + (1 - model.growth_weight * 0.6) + '.',
+      'maturityMult = ' + model.maturity_floor + ' + min(age_days, ' + model.maturity_days + ') / ' + model.maturity_days + ' x ' + model.maturity_range + ' — a protocol listed ' + model.maturity_days + ' days ago scores ' + (model.maturity_floor + model.maturity_range) + '; a brand-new one scores ' + model.maturity_floor + '.',
+      'chainMult = 1 + min(chains - 1, ' + model.chain_cap + ') x ' + model.chain_weight + ' — a protocol on ' + (model.chain_cap + 1) + ' or more chains scores ' + (1 + model.chain_cap * model.chain_weight) + '; a single-chain protocol scores 1.',
+      'readiness = the same four multipliers, each rescaled to 0..1 and averaged, times 100.'
+    ];
+  }
+
   function modelPanel() {
     var m = DATA.model;
     return el('section', { class: 'panel model' },
@@ -389,7 +401,25 @@
       el('div', { class: 'formula' },
         'implied = round( tvl_usd x ' + m.base_multiple + ' x (1 + clamp(change_7d, ' + m.growth_floor + ', ' + m.growth_cap + ') / 100 x ' + m.growth_weight + ') x (' + m.maturity_floor + ' + min(age_days, ' + m.maturity_days + ') / ' + m.maturity_days + ' x ' + m.maturity_range + ') x (1 + min(chains - 1, ' + m.chain_cap + ') x ' + m.chain_weight + ') )'
       ),
+      el('ul', { class: 'model-lines' },
+        describeModel(m).slice(1).map(function (line) { return el('li', { text: line }); })
+      ),
       el('p', { class: 'sub', text: 'TVL and seven-day growth come from the snapshot. Age is the time since the protocol was first listed, the best record of how long it has run with no token; an unlisted age uses ' + m.unknown_age_days + ' days. A protocol on more chains earns a small multiplier for the surface it covers. The early radar is every pre-token protocol below the watchlist floor, by TVL, and the live-token protocols are set aside with their market caps shown.' })
+    );
+  }
+
+  // How to read this board: a short guide under the model panel, so a first-time reader knows
+  // what the rank, the readiness score and the farm plan each mean before they open a row.
+  function guidePanel() {
+    return el('section', { class: 'panel model guide', 'aria-label': 'How to read this board' },
+      el('h2', { text: 'How to read this board' }),
+      el('ol', { class: 'guide-steps' },
+        el('li', null, el('b', { text: 'Rank is implied value. ' }), el('span', { text: 'The strongest implied value is rank 1. The bar in the Implied value column is the row against the top row, so a half-length bar is half the top value.' })),
+        el('li', null, el('b', { text: 'Readiness is a second view. ' }), el('span', { text: 'A row can rank high on size alone; readiness says whether the protocol is also growing, mature and multi-chain. Open a row to see both.' })),
+        el('li', null, el('b', { text: 'Top movers are the fastest growers. ' }), el('span', { text: 'They are the five pre-token protocols with the largest seven-day growth, whatever their rank. A mover with a low rank is early and fast.' })),
+        el('li', null, el('b', { text: 'The farm plan is a checklist. ' }), el('span', { text: 'Each row has eight steps with a cost and a time. The steps are derived from the protocol’s category and chains, so they differ by row.' })),
+        el('li', null, el('b', { text: 'The sandbox is for what-ifs. ' }), el('span', { text: 'Change a constant and the board re-scores. The gate board is untouched; only this page re-ranks.' }))
+      )
     );
   }
 
@@ -532,6 +562,7 @@
     shell.appendChild(state.tab === 'pre-token' ? boardTable() : liveTable());
     if (state.tab === 'pre-token') {
       shell.appendChild(modelPanel());
+      shell.appendChild(guidePanel());
       shell.appendChild(sandboxPanel());
     }
     app.appendChild(shell);

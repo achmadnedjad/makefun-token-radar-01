@@ -90,6 +90,11 @@ a { color: var(--accent); }
 .mover-meta { color: var(--muted); font-size: 12px; }
 
 .sandbox { margin-top: var(--step-4); }
+.guide { margin-top: var(--step-4); }
+.model-lines { margin: var(--step-3) 0 0; padding-left: var(--step-5); display: grid; gap: var(--step-2); font-family: var(--font-num); font-size: 13px; color: var(--muted); }
+.guide-steps { margin: var(--step-3) 0 0; padding-left: var(--step-5); display: grid; gap: var(--step-3); }
+.guide-steps li { padding-left: var(--step-1); }
+.guide-steps span { color: var(--muted); }
 .sandbox-fields { display: flex; flex-wrap: wrap; align-items: end; gap: var(--step-3); margin-top: var(--step-3); }
 .sandbox-fields .field input { min-width: 140px; }
 
