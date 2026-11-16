@@ -210,6 +210,22 @@ export function impliedValue(protocol: SnapshotProtocol, asOf: string, model: Mo
 }
 
 /**
+ * A one-paragraph summary of the board, for the dossier and the README: the top protocol,
+ * the board size, the median implied value and the category split of the early rows.
+ */
+export function boardSummary(board: BoardRow[], snapshot: Snapshot): string {
+  const top = board[0];
+  const median = board[Math.floor(board.length / 2)];
+  const early = board.filter((r) => !snapshot.watchlist.includes(r.slug));
+  const byCategory = new Map<string, number>();
+  for (const r of early) byCategory.set(r.category, (byCategory.get(r.category) ?? 0) + 1);
+  const cats = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c, n]) => `${c} ${n}`).join(', ');
+  return `The board ranks ${board.length} pre-token protocols (${snapshot.watchlist.length} watchlist, ${early.length} early). ` +
+    `Rank 1 is ${top?.name} at $${top?.implied_value_usd.toLocaleString('en-US')}; the median row is ${median?.name} at $${median?.implied_value_usd.toLocaleString('en-US')}. ` +
+    `The largest early categories are ${cats}.`;
+}
+
+/**
  * Launch readiness, 0 to 100, from the same four multipliers that set the implied value.
  * Each multiplier is rescaled to its own 0..1 range and the four are averaged, so a protocol
  * scores high only when it is large, growing, mature and multi-chain at once. The score is a

@@ -61,6 +61,10 @@ A static page, no framework and no network: search, category and chain filters, 
 
 **What does the sandbox change?** Only this page's ranking. The gate board (board.json) is written by main.ts from the house model and is never rewritten by the page.
 
+## What the judge sees
+
+The entry is judged on the board, the model, the farm plans, the dashboard and the look. The board is 226 rows: all 40 watchlist protocols plus every rankable pre-token protocol below the $50M floor, by TVL. The model is one function of the snapshot figures — TVL, seven-day growth, age, chains — with no protocol name special-cased. The farm plans are eight steps each, with a cost and a time, and the steps differ by category and chain. The dashboard is a static page with search, filters, sort, a detail view per protocol, a model panel, a how-to-read guide and a model sandbox. The look is a dark night theme in ink-green, gold and emerald.
+
 ## Verified locally
 
 The entry's own run on the sealed snapshot writes 226 rows, and a local replica of the sealed seven-row gate (dashboard files, board, sorted order, watchlist coverage, farm steps, screenshots, dossier) passes 7/7. The dashboard's source is 35 KB (cap 64 KB) and the dossier text is 35,419 bytes; the three screenshots are 1440x900 PNGs under 512 KB each. The dashboard page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.
