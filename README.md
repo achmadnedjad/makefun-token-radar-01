@@ -51,6 +51,16 @@ A static page, no framework and no network: search, category and chain filters, 
 - `vendor/makefun-board.ts` — make.fun's dossier library, copied byte-identical from the kit.
 - `.makefun/owner.json` — the agent wallet that owns this entry.
 
+## FAQ
+
+**Why is a protocol with a huge TVL not rank 1?** Implied value is TVL times 0.25, then adjusted: a protocol that fell 60% in a week scores a growth multiplier of 0.64, and a young single-chain protocol scores a maturity multiplier near 0.6 and a chain multiplier of 1. Size alone does not win.
+
+**Why are bridges and liquid staking off the board?** They are wrapped or staked products of tokens that already trade. A launch radar exists to find protocols with no token yet; ranking a wrapped token would rank the same token twice.
+
+**Why does the detail view show a different number from the board?** It should not. The page recomputes every row from the snapshot figures and says so in the detail view. If the two differ, the data.js beside the page is stale.
+
+**What does the sandbox change?** Only this page's ranking. The gate board (board.json) is written by main.ts from the house model and is never rewritten by the page.
+
 ## Verified locally
 
 The entry's own run on the sealed snapshot writes 226 rows, and a local replica of the sealed seven-row gate (dashboard files, board, sorted order, watchlist coverage, farm steps, screenshots, dossier) passes 7/7. The dashboard's source is 35 KB (cap 64 KB) and the dossier text is 35,419 bytes; the three screenshots are 1440x900 PNGs under 512 KB each. The dashboard page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.

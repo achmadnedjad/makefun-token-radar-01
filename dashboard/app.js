@@ -426,6 +426,16 @@
   var dialog = el('dialog', { class: 'detail', id: 'detail', 'aria-labelledby': 'detail-title' });
   dialog.addEventListener('close', function () { state.selected = null; writeHash(); });
 
+  // A row's rank under the sandbox model, for the detail view: the sandbox re-scores every
+  // row with the reader's constants and counts how many score above this one.
+  function sandboxRank(row) {
+    if (!sandboxActive()) return row.rank;
+    var model = sandboxModel();
+    var mine = impliedOf(row, model);
+    var above = DATA.rows.filter(function (r) { return impliedOf(r, model) > mine; }).length;
+    return above + 1;
+  }
+
   function openDetail(slug) {
     var row = DATA.rows.filter(function (r) { return r.slug === slug; })[0];
     if (!row) return;
@@ -439,7 +449,10 @@
         el('h2', { id: 'detail-title', text: row.name }),
         el('p', { class: 'sub', text: (row.category || 'Other') + ' on ' + (row.chains && row.chains.length ? row.chains.join(', ') : 'an unnamed chain') })
       ),
-      el('button', { class: 'close', type: 'button', 'aria-label': 'Close details', text: 'Close', onclick: function () { dialog.close(); } })
+      el('div', { class: 'detail-actions' },
+        el('button', { type: 'button', class: 'button', text: 'Copy link', onclick: function () { var url = location.origin + location.pathname + '#p=' + row.slug; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url); } }),
+        el('button', { class: 'close', type: 'button', 'aria-label': 'Close details', text: 'Close', onclick: function () { dialog.close(); } })
+      )
     ));
     dialog.appendChild(el('section', { class: 'detail-section' },
       el('h3', { text: 'Implied value' }),
@@ -453,7 +466,8 @@
         el('div', null, el('span', { text: 'Maturity multiplier' }), el('b', { class: 'num', text: String(row.maturity_multiplier) })),
         el('div', null, el('span', { text: 'Chain multiplier' }), el('b', { class: 'num', text: String(row.chain_multiplier) })),
         el('div', null, el('span', { text: 'Implied value' }), el('b', { class: 'num', text: fmtUsd(row.implied_value_usd) })),
-        el('div', null, el('span', { text: 'Launch readiness' }), el('b', { class: 'num', text: String(row.readiness !== undefined && row.readiness !== null ? row.readiness : readinessOf(row, DATA.model)) + ' / 100' }))
+        el('div', null, el('span', { text: 'Launch readiness' }), el('b', { class: 'num', text: String(row.readiness !== undefined && row.readiness !== null ? row.readiness : readinessOf(row, DATA.model)) + ' / 100' })),
+        sandboxActive() ? el('div', null, el('span', { text: 'Sandbox rank' }), el('b', { class: 'num', text: String(sandboxRank(row)) + ' of ' + DATA.rows.length })) : null
       ),
       el('p', { class: 'sub', text: readinessLabel(row.readiness !== undefined && row.readiness !== null ? row.readiness : readinessOf(row, DATA.model)) }),
       el('p', { class: 'sub', text: 'Model ' + DATA.model_version + ': the same function scores every protocol. The page recomputes this row as ' + fmtUsd(impliedOf(row, DATA.model)) + (impliedOf(row, DATA.model) === row.implied_value_usd ? ', the same number board.json carries.' : ', which differs from the board: the data would be stale.') + ' This is an estimate, not a price.' })

@@ -37,6 +37,10 @@ function arg(name: string, fallback: string): string {
   return withEquals === undefined ? fallback : withEquals.slice(name.length + 3);
 }
 
+/**
+ * The snapshot's path: --input <snapshot.json> for a file, --input <directory> for a directory
+ * that holds snapshot.json, /input for the grader's sealed mount.
+ */
 const inputArg = arg('input', '/input');
 const inputFile = inputArg.endsWith('.json') ? inputArg : join(inputArg, 'snapshot.json');
 if (!existsSync(inputFile)) {
