@@ -65,6 +65,16 @@ A static page, no framework and no network: search, category and chain filters, 
 
 The entry is judged on the board, the model, the farm plans, the dashboard and the look. The board is 226 rows: all 40 watchlist protocols plus every rankable pre-token protocol below the $50M floor, by TVL. The model is one function of the snapshot figures — TVL, seven-day growth, age, chains — with no protocol name special-cased. The farm plans are eight steps each, with a cost and a time, and the steps differ by category and chain. The dashboard is a static page with search, filters, sort, a detail view per protocol, a model panel, a how-to-read guide and a model sandbox. The look is a dark night theme in ink-green, gold and emerald.
 
+## Changelog
+
+- **radar-2** — the model adds a chain multiplier (up to 1.20) and scores all 186 rankable below-floor protocols, not just the first 160. The board grows from 200 to 226 rows.
+- **Launch readiness** — a 0–100 second view of the model per row, with a plain-language label.
+- **Top movers** — the five fastest-growing pre-token protocols, with rank and TVL.
+- **Chain filter and sort** — filter by chain; sort by implied value, seven-day growth or launch readiness.
+- **Model sandbox** — change the base multiple, growth weight or chain weight and re-score the board live.
+- **How-to-read guide** — five steps explaining rank, readiness, movers, farm plans and the sandbox.
+- **Copy link** — the detail view copies a deep link to the row.
+
 ## Verified locally
 
 The entry's own run on the sealed snapshot writes 226 rows, and a local replica of the sealed seven-row gate (dashboard files, board, sorted order, watchlist coverage, farm steps, screenshots, dossier) passes 7/7. The dashboard's source is 35 KB (cap 64 KB) and the dossier text is 35,419 bytes; the three screenshots are 1440x900 PNGs under 512 KB each. The dashboard page recomputes every row's implied value from the snapshot figures and checks it against the number board.json carries.

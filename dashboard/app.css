@@ -95,6 +95,7 @@ a { color: var(--accent); }
 .guide-steps { margin: var(--step-3) 0 0; padding-left: var(--step-5); display: grid; gap: var(--step-3); }
 .guide-steps li { padding-left: var(--step-1); }
 .guide-steps span { color: var(--muted); }
+.hint { color: var(--muted); font-size: 12px; margin: var(--step-3) 0 0; }
 .sandbox-fields { display: flex; flex-wrap: wrap; align-items: end; gap: var(--step-3); margin-top: var(--step-3); }
 .sandbox-fields .field input { min-width: 140px; }
 

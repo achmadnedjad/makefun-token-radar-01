@@ -354,7 +354,8 @@
           )),
           tbody
         )
-      )
+      ),
+      el('p', { class: 'hint', text: 'Keyboard: Tab to a row, Enter or Space to open it, Esc to close the detail view.' })
     );
   }
 

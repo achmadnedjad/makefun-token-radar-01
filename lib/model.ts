@@ -210,6 +210,16 @@ export function impliedValue(protocol: SnapshotProtocol, asOf: string, model: Mo
 }
 
 /**
+ * A one-liner about the live-token protocols set aside, for the dossier: how many there are
+ * and which one has the largest market cap, so the field guide can say what was excluded.
+ */
+export function liveSummary(live: LiveRow[]): string {
+  if (live.length === 0) return 'No live-token protocols were set aside.';
+  const top = live[0];
+  return `${live.length} live-token protocols were set aside, the largest ${top?.name} at a $${top?.mcap_usd.toLocaleString('en-US')} market cap.`;
+}
+
+/**
  * A one-paragraph summary of the board, for the dossier and the README: the top protocol,
  * the board size, the median implied value and the category split of the early rows.
  */
