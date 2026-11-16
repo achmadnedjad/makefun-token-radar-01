@@ -7,7 +7,7 @@
   var DATA = window.RADAR;
   if (!DATA) return;
   var app = document.getElementById('board');
-  var state = { q: '', category: 'all', chain: 'all', tab: 'pre-token', sort: 'implied', dir: -1, selected: null };
+  var state = { q: '', category: 'all', chain: 'all', tab: 'pre-token', sort: 'implied', dir: -1, selected: null, sandbox: { base: '', growth: '', chain: '' } };
 
   var usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   function fmtUsd(n) {
@@ -213,6 +213,10 @@
     });
     if (state.sort === 'growth') list = sortRows(list, 'growth');
     else if (state.sort === 'readiness') list = sortRows(list, 'readiness');
+    else if (sandboxActive()) {
+      var model = sandboxModel();
+      list.sort(function (a, b) { return impliedOf(b, model) - impliedOf(a, model); });
+    }
     return list;
   }
   function sortedRows(list) {
@@ -472,6 +476,50 @@
     );
   }
 
+  // The model sandbox: three number inputs that re-score the whole board with the reader's
+  // own constants, so the model's sensitivity is visible instead of asserted. The gate's
+  // board (board.json) is never rewritten; the sandbox only re-ranks the page's copy, and a
+  // Reset button returns to the house model. A re-scored row keeps its gate rank in the Rank
+  // column and shows its sandbox rank in the detail view.
+  function sandboxModel() {
+    var m = {};
+    for (var k in DATA.model) m[k] = DATA.model[k];
+    var base = parseFloat(state.sandbox.base);
+    var growth = parseFloat(state.sandbox.growth);
+    var chain = parseFloat(state.sandbox.chain);
+    if (isFinite(base) && base > 0) m.base_multiple = base;
+    if (isFinite(growth) && growth >= 0) m.growth_weight = growth;
+    if (isFinite(chain) && chain >= 0) m.chain_weight = chain;
+    return m;
+  }
+  function sandboxActive() {
+    return state.sandbox.base !== '' || state.sandbox.growth !== '' || state.sandbox.chain !== '';
+  }
+  function sandboxPanel() {
+    var model = sandboxActive() ? sandboxModel() : DATA.model;
+    var panel = el('section', { class: 'panel model sandbox', 'aria-label': 'Model sandbox' },
+      el('h2', { text: 'Model sandbox' }),
+      el('p', { text: 'Change a constant and the board re-scores with it. The gate board is untouched; only this page re-ranks. Reset returns to the house model.' }),
+      el('div', { class: 'sandbox-fields' },
+        el('div', { class: 'field' },
+          el('label', { for: 'sb-base', text: 'Base multiple (TVL x …)' }),
+          el('input', { id: 'sb-base', type: 'number', step: '0.05', min: '0', value: state.sandbox.base, placeholder: String(DATA.model.base_multiple), oninput: function (e) { state.sandbox.base = e.target.value; render(); } })
+        ),
+        el('div', { class: 'field' },
+          el('label', { for: 'sb-growth', text: 'Growth weight' }),
+          el('input', { id: 'sb-growth', type: 'number', step: '0.1', min: '0', value: state.sandbox.growth, placeholder: String(DATA.model.growth_weight), oninput: function (e) { state.sandbox.growth = e.target.value; render(); } })
+        ),
+        el('div', { class: 'field' },
+          el('label', { for: 'sb-chain', text: 'Chain weight' }),
+          el('input', { id: 'sb-chain', type: 'number', step: '0.01', min: '0', value: state.sandbox.chain, placeholder: String(DATA.model.chain_weight), oninput: function (e) { state.sandbox.chain = e.target.value; render(); } })
+        ),
+        el('button', { type: 'button', class: 'button', text: 'Reset to the house model', onclick: function () { state.sandbox = { base: '', growth: '', chain: '' }; render(); } })
+      ),
+      el('p', { class: 'formula', text: 'Sandbox model: implied = round(TVL x ' + model.base_multiple + ' x growthMult x maturityMult x chainMult), growthMult = 1 + clamp(change_7d, ' + model.growth_floor + ', ' + model.growth_cap + ') / 100 x ' + model.growth_weight + ', chainMult = 1 + min(chains - 1, ' + model.chain_cap + ') x ' + model.chain_weight + '.' })
+    );
+    return panel;
+  }
+
   function render() {
     app.textContent = '';
     var shell = el('div', { class: 'shell' });
@@ -482,7 +530,10 @@
     if (mv) shell.appendChild(mv);
     shell.appendChild(controls());
     shell.appendChild(state.tab === 'pre-token' ? boardTable() : liveTable());
-    if (state.tab === 'pre-token') shell.appendChild(modelPanel());
+    if (state.tab === 'pre-token') {
+      shell.appendChild(modelPanel());
+      shell.appendChild(sandboxPanel());
+    }
     app.appendChild(shell);
     app.setAttribute('aria-busy', 'false');
     if (!dialog.isConnected) app.appendChild(dialog);

@@ -17,6 +17,10 @@
 //
 // The constants are the house model's, stated in the dashboard and changeable in the model sandbox. No
 // protocol name is ever special-cased: the same function scores every row.
+//
+// The dashboard's model sandbox re-scores the board with the reader's own constants: it calls
+// impliedValue with a changed ModelConstants, so the sandbox and the gate share one function and
+// the sandbox can never drift from the model it demonstrates.
 
 /** The snapshot's protocol entry: exactly the ten fields the sealed input carries. */
 export interface SnapshotProtocol {

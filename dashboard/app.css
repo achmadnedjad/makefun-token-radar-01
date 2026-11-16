@@ -89,6 +89,10 @@ a { color: var(--accent); }
 .mover-growth { font-size: 17px; font-weight: 600; }
 .mover-meta { color: var(--muted); font-size: 12px; }
 
+.sandbox { margin-top: var(--step-4); }
+.sandbox-fields { display: flex; flex-wrap: wrap; align-items: end; gap: var(--step-3); margin-top: var(--step-3); }
+.sandbox-fields .field input { min-width: 140px; }
+
 .controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--step-3); padding: var(--step-4) 0; border-top: 1px solid var(--border); }
 .field { display: grid; gap: var(--step-1); }
 .field label { color: var(--muted); font-size: 12px; }

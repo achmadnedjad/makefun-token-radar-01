@@ -30,6 +30,10 @@ Each row also carries a launch readiness score, 0 to 100: the same four multipli
 
 The dashboard's Top movers strip shows the five fastest-growing pre-token protocols by seven-day growth, each opening its detail view. The strip is computed from the board, never hand-picked.
 
+### Model sandbox
+
+The dashboard's Model sandbox lets the reader change three constants — base multiple, growth weight, chain weight — and re-scores the whole board with them, live. The gate board (board.json) is never rewritten; only the page re-ranks. A Reset button returns to the house model. The sandbox shows the formula with the reader's constants filled in, so the model's sensitivity is visible instead of asserted.
+
 ### Farm plans
 
 Every row carries an eight-step farm plan derived from the protocol's own record: a fresh wallet, a first position sized to the TVL, a weekly action and a second position specific to its category, a points-page check, and a farm log. Steps name the cost and the time they take.
